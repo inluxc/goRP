@@ -201,6 +201,11 @@ type (
 	Timestamp struct {
 		time.Time
 	}
+
+	//ImportRS payload
+	ImportRS struct {
+		Msg string `json:"message,omitempty"`
+	}
 )
 
 //UnmarshalJSON converts Epoch milliseconds (timestamp) to appropriate object

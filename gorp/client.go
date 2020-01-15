@@ -1,11 +1,14 @@
 package gorp
 
 import (
+	"archive/zip"
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"mime/multipart"
 	"os"
+	"strings"
 	"time"
 
 	"gopkg.in/resty.v1"
@@ -277,4 +280,38 @@ func (c *Client) MergeLaunches(rq *MergeLaunchesRQ) (*LaunchResource, error) {
 		SetResult(&rs).
 		Post("/api/v1/{project}/launch/merge")
 	return &rs, err
+}
+
+//SaveLog attaches log in RP
+func (c *Client) Import(junit *bytes.Buffer) (*ImportRS, error) {
+
+	var rs ImportRS
+	outputFile := strings.NewReader("")
+
+	jUnitZip := zip.NewWriter(junit)
+	jUnitZipData, err := jUnitZip.Create("jUnit.zip")
+	if err != nil {
+		return &rs, err
+	}
+
+	_, err = io.Copy(jUnitZipData, outputFile)
+	if err != io.EOF {
+		return &rs, err
+	}
+
+	err = jUnitZip.Close()
+	if err != nil {
+		return &rs, err
+	}
+
+	rq := c.http.R().
+		SetPathParams(map[string]string{
+			"project": c.project,
+		}).
+		SetFileReader("file", "jUnit.zip", outputFile)
+	_, err = rq.
+		SetResult(&rs).
+		Post("/api/v1/{project}/log")
+	return &rs, err
+
 }
